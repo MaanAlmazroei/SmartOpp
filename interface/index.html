@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Matcher</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="page-container">
+        <header class="header">
+            <h1 class="title">SmartOpp</h1>
+            <p class="subtitle">Upload Your CV file to find matching opportunities in our database.</p>
+        </header>
+        
+        <main class="main">
+            <div class="container">
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-content">
+                        <div class="upload-icon">📄</div>
+                        <h3 class="heading">Drag & Drop Your CV File Here</h3>
+                        <p class="text">or</p>
+                        <label for="file-input" class="browse-button">Select File</label>
+                        <input id="file-input" type="file" accept=".docx, .pdf" style="display: none;">
+                        <p class="file-requirements">Supported formats: .docx, .pdf • Max size: 10MB</p>
+                    </div>
+                </div>
+                
+                <div id="error-container" class="error-container" style="display: none;"></div>
+                <div id="status-container" class="status-container" style="display: none;"></div>
+                <div id="file-info" class="file-item" style="display: none;">
+                    <span id="file-name"></span>
+                    <button id="remove-file-button" class="remove-button">×</button>
+                </div>
+                <button id="upload-button" class="upload-button" style="display: none;">Find Matching Opportunities</button>
+                <div id="matches-container" class="matches-container" style="display: none;"></div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
