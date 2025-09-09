@@ -1,0 +1,11 @@
+# Ignore datasets and model weights
+*.csv
+*.pt
+*.bin
+*.safetensors
+*.pth
+*.pdf
+results/
+job posts part/job_results/
+my_cv_classifier/
+job posts part/job_classifier/
