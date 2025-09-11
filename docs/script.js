@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let file = null;
     let isProcessing = false;
 
+    // --- Drag & Drop ---
     dropzone.addEventListener('dragenter', (e) => {
         e.preventDefault();
         dropzone.classList.add('dragging');
@@ -22,26 +23,24 @@ document.addEventListener("DOMContentLoaded", () => {
         dropzone.classList.remove('dragging');
     });
 
-    dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-    });
+    dropzone.addEventListener('dragover', (e) => e.preventDefault());
 
     dropzone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropzone.classList.remove('dragging');
-        const droppedFiles = e.dataTransfer.files;
-        if (droppedFiles.length > 0) {
-            processFile(droppedFiles[0]);
+        if (e.dataTransfer.files.length > 0) {
+            processFile(e.dataTransfer.files[0]);
         }
     });
 
+    // --- File select ---
     fileInput.addEventListener('change', (e) => {
-        const selectedFiles = e.target.files;
-        if (selectedFiles.length > 0) {
-            processFile(selectedFiles[0]);
+        if (e.target.files.length > 0) {
+            processFile(e.target.files[0]);
         }
     });
 
+    // --- Process file (validate) ---
     function processFile(selectedFile) {
         errorContainer.style.display = 'none';
         statusContainer.style.display = 'none';
@@ -50,9 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadButton.style.display = 'none';
 
         const validFileTypes = ['.docx', '.pdf'];
+        const ext = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf('.'));
 
-        const fileExtension = selectedFile.name.toLowerCase().substring(selectedFile.name.lastIndexOf('.'));
-        if (!validFileTypes.includes(fileExtension)) {
+        if (!validFileTypes.includes(ext)) {
             showError(`${selectedFile.name} is not a DOCX or PDF file`);
             return;
         }
@@ -62,7 +61,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         file = selectedFile;
-        displayFileInfo();
+        fileNameDisplay.textContent = `File: ${file.name}`;
+        fileInfo.style.display = 'flex';
         uploadButton.style.display = 'block';
     }
 
@@ -71,11 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
         errorContainer.style.display = 'block';
     }
 
-    function displayFileInfo() {
-        fileNameDisplay.textContent = `File: ${file.name}`;
-        fileInfo.style.display = 'flex';
-    }
-
+    // --- Remove file ---
     removeFileButton.addEventListener('click', () => {
         file = null;
         fileInfo.style.display = 'none';
@@ -83,51 +79,62 @@ document.addEventListener("DOMContentLoaded", () => {
         matchesContainer.style.display = 'none';
     });
 
+    // --- Upload file to Hugging Face backend ---
     uploadButton.addEventListener('click', async () => {
         if (!file || isProcessing) return;
-        
+
         isProcessing = true;
         uploadButton.textContent = 'Processing...';
         statusContainer.style.display = 'none';
 
         try {
-            // Simulate processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            let formData = new FormData();
+            // backend expects "file" (not "cv")
+            formData.append("file", file);
 
-            // Mock the response
-            const mockMatches = [
-                { id: 1, name: 'Opportunity 1', category: 'Business', date: '2023-10-15', status: 'Completed', matchScore: 92 },
-                { id: 2, name: 'Opportunity 2', category: 'Business', date: '2023-09-20', status: 'Reviewed', matchScore: 85 }
-            ];
+            const response = await fetch("https://maankau-cv-job-matcher.hf.space/match", {
+                method: "POST",
+                body: formData
+            });
 
-            displayMatches(mockMatches);
+            if (!response.ok) throw new Error("Server error");
+
+            const data = await response.json();
+            displayMatches(data.matches);
+
         } catch (error) {
-            showError('Upload failed. Please try again.');
+            showError("Upload failed. Please try again.");
         } finally {
             isProcessing = false;
             uploadButton.textContent = 'Find Matching Opportunities';
         }
     });
 
+    // --- Show job matches ---
     function displayMatches(matches) {
         matchesContainer.innerHTML = '';
         matchesContainer.style.display = 'block';
-        if (matches.length > 0) {
-            matches.forEach(match => {
-                const matchCard = document.createElement('div');
-                matchCard.className = 'match-card';
-                matchCard.innerHTML = `
-                    <div class="match-name">${match.name}</div>
-                    <div class="match-details">
-                        <p>Category: ${match.category}</p>
-                        <p>Date: ${match.date}</p>
-                        <p>Status: ${match.status} (${match.matchScore}% match)</p>
-                    </div>
-                `;
-                matchesContainer.appendChild(matchCard);
-            });
-        } else {
-            matchesContainer.textContent = 'No matching documents found.';
+
+        if (!matches || matches.length === 0) {
+            matchesContainer.textContent = 'No matching jobs found.';
+            return;
         }
+
+        const heading = document.createElement("h3");
+        heading.textContent = "Top Matching Jobs:";
+        matchesContainer.appendChild(heading);
+
+        matches.forEach(match => {
+            const matchCard = document.createElement('div');
+            matchCard.className = 'match-card';
+            matchCard.innerHTML = `
+                <div class="match-name">${match.predicted_category} — ${match.match_score}%</div>
+                <div class="match-details">
+                    <p>${match.url}</p>
+                    <a href="${match.url}" target="_blank">View Job</a>
+                </div>
+            `;
+            matchesContainer.appendChild(matchCard);
+        });
     }
 });
